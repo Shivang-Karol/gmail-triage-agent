@@ -75,10 +75,11 @@ def process_queue():
                         increment_daily_calls(conn)
                         used_model = model_name
                     except Exception as gemini_err:
-                        logger.warning(f"Gemini error on {msg_id}: {gemini_err}")
+                        logger.warning(f"Gemini error on {msg_id}: {gemini_err}. Falling back to keywords.")
                         ml_result = FallbackClassifier.classify(body_text)
                         used_model = "fallback_rules"
                 else:
+                    logger.info(f"Using fallback keywords for {msg_id} (Gemini unavailable)")
                     ml_result = FallbackClassifier.classify(body_text)
                     used_model = "fallback_rules"
                 

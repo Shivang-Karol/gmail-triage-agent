@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS emails (
     received_at TIMESTAMP,
     
     -- Processing State
-    status TEXT DEFAULT 'pending', -- pending, leased, completed, failed, dead_letter
-    attempt_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'leased', 'completed', 'failed', 'dead_letter')),
+    attempt_count INTEGER DEFAULT 0 CHECK(attempt_count >= 0 AND attempt_count <= 10),
     
     -- Locking (Concurrency Control)
     lease_owner TEXT,           -- UUID of the worker claiming the job

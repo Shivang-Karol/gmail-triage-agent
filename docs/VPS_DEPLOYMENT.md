@@ -1,84 +1,182 @@
-# Azure VM Deployment Guide for Gmail Triage Agent
+# ☁️ Azure VM Deployment Guide
 
-This guide covers setting up an Azure Virtual Machine and deploying the containerized `gmail-triage` agent.
+This guide walks you through deploying the Gmail Triage Agent to a cloud server so it runs 24/7 — even when your computer is off.
 
-## 1. Provisioning the VM (Azure Portal)
-
-1.  **Create a Resource Group**: Name it something like `gmail-triage-group`.
-2.  **Create a Virtual Machine**:
-    *   **Image**: Ubuntu 22.04 LTS (or similar Linux).
-    *   **Size**: `Standard_B1s` (1 vCPU, 1 GB RAM) is sufficient.
-    *   **Authentication type**: SSH public key (recommended).
-    *   **Public IP**: Ensure "Standard" Public IP is created.
-    *   **NSG (Network Security Group)**: Allow inbound `SSH` (port 22) from your IP.
-3.  **Note the Public IP address** once created.
+**No prior cloud or Docker experience is required.** Every step is copy-paste.
 
 ---
 
-## 2. Server Configuration
+## What You'll Need Before Starting
 
-Connect to your VM via SSH:
-```bash
-ssh <admin-user>@<your-vps-ip>
-```
+Before touching Azure, make sure you've completed these on your **local PC** first:
 
-### Install Docker & Docker Compose
-Run these commands to get your Linux environment ready:
-```bash
-# Update packages
-sudo apt-get update && sudo apt-get upgrade -y
+1. ✅ Cloned this repository
+2. ✅ Filled in your `.env` file (copy from `.env.example`)
+3. ✅ Placed your `credentials.json` in the project root
+4. ✅ Run `py -3.12 main.py run` at least once locally (this generates `token.json` via a browser popup — you **cannot** do this on a headless cloud server)
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Install Docker Compose
-sudo apt-get install -y docker-compose-plugin
-
-# Add your user to the docker group
-sudo usermod -aG docker $USER
-```
-*(Logout and log back in for the group changes to take effect)*
+> [!IMPORTANT]
+> The `token.json` file is your Gmail access pass. It can only be created on a computer with a web browser. You must generate it locally first, then transfer it to the cloud.
 
 ---
 
-## 3. Deployment Steps
+## Step 1: Create Your Azure VM
 
-### Prepare the Application Directory
-```bash
-mkdir ~/gmail-triage
-cd ~/gmail-triage
-```
+1. Go to [portal.azure.com](https://portal.azure.com) and sign in.
+2. Click **"Create a resource"** → **"Virtual Machine"**.
+3. Fill in the settings:
 
-### Transfer Files
-From your **local computer**, transfer the following files (using `scp` or a similar tool):
+| Setting | Recommended Value |
+| :--- | :--- |
+| **Resource Group** | `gmail-triage-group` (create new) |
+| **VM Name** | `gmail-triage-vm` |
+| **Region** | Pick one where `B2ats_v2` shows as "Free services eligible" (try East US) |
+| **Image** | `Ubuntu Server 24.04 LTS - x64 Gen2` |
+| **Size** | `Standard_B2ats_v2` (2 vCPUs, 1 GB RAM) — look for the **"free services eligible"** tag |
+| **Authentication** | SSH public key (Azure will generate one for you) |
+| **Username** | `azureuser` |
+| **Inbound Ports** | Allow **SSH (22)** only |
+
+4. Go to the **Disks** tab → change "OS disk type" to **Standard SSD** (saves money).
+5. Click **Review + create** → **Create**.
+6. **Download the `.pem` key file** when prompted. Save it somewhere safe — you cannot download it again!
+
+> [!TIP]
+> The `B2ats_v2` size is free for 750 hours/month (that's more than a full month of 24/7 running). It will not touch your Azure credits for the first 12 months.
+
+---
+
+## Step 2: Log Into Your VM
+
+Open **Windows Terminal** or **PowerShell** and run:
+
 ```powershell
-# Copy core files (Run from YOUR computer, not the VM)
-scp Dockerfile docker-compose.yml main.py schema.sql <admin-user>@<vps-ip>:~/gmail-triage/
-scp -r src/ <admin-user>@<vps-ip>:~/gmail-triage/
-scp -r config/ <admin-user>@<vps-ip>:~/gmail-triage/
-scp -r scripts/ <admin-user>@<vps-ip>:~/gmail-triage/
+ssh -i "C:\path\to\your-key.pem" azureuser@<your-vm-public-ip>
 ```
 
-### Inject Secrets (CRITICAL)
-Transfer your current secrets (highly sensitive):
+**First time?** Type `yes` when asked about the host fingerprint.
+
+**Getting a "permissions too open" error?** Fix it with:
 ```powershell
-scp .env token.json credentials.json <admin-user>@<vps-ip>:~/gmail-triage/
+icacls "C:\path\to\your-key.pem" /inheritance:r
+icacls "C:\path\to\your-key.pem" /grant:r "%USERNAME%:R"
+```
+Then try the SSH command again.
+
+---
+
+## Step 3: Install Docker on the VM
+
+Once you're logged in (you'll see `azureuser@gmail-triage-vm:~$`), paste this entire block:
+
+```bash
+sudo apt-get update && sudo apt-get upgrade -y && \
+curl -fsSL https://get.docker.com -o get-docker.sh && \
+sudo sh get-docker.sh && \
+sudo apt-get install -y docker-compose-plugin && \
+sudo usermod -aG docker $USER && \
+mkdir -p ~/gmail-triage && \
+echo "✅ Docker installed! Type 'exit' and log back in to continue."
+```
+
+After it finishes, type `exit` and SSH back in. This activates the Docker permissions.
+
+---
+
+## Step 4: Transfer Your Code and Secrets
+
+Run these from your **local Windows terminal** (not the VM):
+
+### Transfer application code:
+```powershell
+scp -i "C:\path\to\your-key.pem" Dockerfile docker-compose.yml main.py schema.sql requirements.txt .dockerignore azureuser@<your-ip>:~/gmail-triage/
+
+scp -i "C:\path\to\your-key.pem" -r src config scripts azureuser@<your-ip>:~/gmail-triage/
+```
+
+### Transfer secrets (the important part!):
+```powershell
+scp -i "C:\path\to\your-key.pem" .env token.json credentials.json azureuser@<your-ip>:~/gmail-triage/
+```
+
+> [!WARNING]
+> These secret files (`.env`, `token.json`, `credentials.json`) give full access to your Gmail and AI accounts. Transfer them over SSH only — never put them in a public place.
+
+---
+
+## Step 5: Start the Bot
+
+SSH back into your VM and run:
+
+```bash
+cd ~/gmail-triage
+docker compose up -d --build
+```
+
+The first build takes 2-3 minutes. After that, your bot is running!
+
+---
+
+## Step 6: Verify It's Working
+
+Check the logs:
+```bash
+docker compose logs --tail=30
+```
+
+You should see output like:
+```
+gmail-triage-agent | Gmail Triage Agent — Starting Run
+gmail-triage-agent | [Phase 1/2] Running Ingestor...
+gmail-triage-agent | Ingestion complete. Queued: 5, Skipped (Privacy): 0
+gmail-triage-agent | [Phase 2/2] Running Worker...
+gmail-triage-agent | Sleeping for 60 minutes until next run...
+```
+
+**That's it! Your bot is now running 24/7 in the cloud.** 🎉
+
+---
+
+## Daily Operations Cheat Sheet
+
+All of these commands are run **on the VM** (SSH in first):
+
+| What you want to do | Command |
+| :--- | :--- |
+| Watch live logs | `docker compose logs -f --tail=20` |
+| Stop the bot | `docker compose down` |
+| Restart the bot | `docker compose up -d` |
+| Rebuild after code changes | `docker compose up -d --build` |
+| Run one triage cycle manually | `docker exec gmail-triage-agent python main.py run` |
+| Check queue health | `docker exec gmail-triage-agent python main.py status` |
+| Run a database backup | `docker exec gmail-triage-agent python main.py backup` |
+
+---
+
+## Updating the Bot
+
+When you make code changes locally:
+
+1. Push changes to GitHub from your PC
+2. SSH into your VM
+3. Pull and rebuild:
+```bash
+cd ~/gmail-triage
+# Transfer updated files via scp (same commands as Step 4)
+docker compose up -d --build
 ```
 
 ---
 
-## 4. Launching the Agent
+## Cost Breakdown
 
-On the **VM**, run:
-```bash
-cd ~/gmail-triage
-docker-compose up -d --build
-```
+| Resource | Cost |
+| :--- | :--- |
+| VM (B2ats_v2) | **Free** for 12 months (750 hrs/month), then ~$4.49/month |
+| OS Disk (Standard SSD, 30GB) | ~$2/month (may be included in free tier) |
+| Public IP | ~$3/month |
+| **Total (Year 1)** | **~$3-5/month** |
+| **Total (After Year 1)** | **~$8-10/month** |
 
-Monitor logs:
-```bash
-docker-compose logs -f
-```
-
-The agent is now running as a background daemon and will check your Gmail every hour automatically!
+> [!TIP]
+> With $100 in annual Azure credits, this setup will last comfortably for **over 2 years** of continuous operation.

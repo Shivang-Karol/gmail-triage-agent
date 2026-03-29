@@ -1,21 +1,27 @@
 # Gmail Triage Agent
 
-Reliable, local-first Gmail automation that classifies incoming emails, applies labels, and helps you avoid missing placement, internship, interview, and deadline updates.
+An AI-powered Gmail assistant that automatically reads, classifies, and labels your incoming emails. Built for students and professionals who don't want to miss placement, internship, interview, or deadline updates buried in a noisy inbox.
 
-## Why this project
+## What does it do?
 
-Most inbox tools fail when APIs timeout, models return odd output, or processes crash mid-run. This project uses queue-first processing, retries, and replay tooling so the workflow remains operational under real-world conditions.
+Every hour, this bot:
+1. **Reads** your new Gmail messages
+2. **Classifies** each one using Google's Gemini AI (or keyword-based fallback rules)
+3. **Labels** them in your Gmail (e.g., `Placement`, `Academic`, `Finance`, `Spam`)
+4. **Logs** everything to a local database so nothing is ever lost
+
+You can run it **locally on your Windows PC** or deploy it to the **cloud on an Azure VM** for 24/7 hands-free operation. Both paths are fully documented below.
 
 ## Key features
 
-- Queue-based pipeline using SQLite for durable processing state
-- Structured classification workflow with confidence-aware labeling
-- Cost guardrails for model usage (`daily_call_cap`)
-- Dead-letter recovery with replay command
-- Weekly digest reporting from processed history
-- Scheduled backups with retention cleanup (Windows & Linux)
-- Windows Task Scheduler integration for local operation
-- **Docker support** for cloud deployment (Azure, GCP, etc.)
+- Queue-based pipeline using SQLite — if power goes out, it picks up where it left off
+- AI classification with confidence scoring (powered by Google Gemini)
+- Automatic fallback to keyword rules when the AI quota runs out
+- Cost guardrails (`daily_call_cap`) to prevent burning through API credits
+- Dead-letter recovery — emails that fail processing can be replayed
+- Weekly digest reports from your processed email history
+- Scheduled backups with automatic cleanup of old files
+- PII redaction — sensitive info (phone numbers, IDs) is stripped before reaching the AI
 
 ## Architecture
 
@@ -33,160 +39,227 @@ graph LR
 ## Repository layout
 
 ```text
-config/      Runtime config and category policy
-docs/        Architecture notes and operations docs
-scripts/     Scheduler setup, backups, and local control scripts
-src/         Core ingest, classify, queue, and policy logic
-tests/       Test suite
-main.py      CLI entry point
-schema.sql   Database schema
-Dockerfile   Container build definition
-docker-compose.yml  Local/cloud container orchestration
+config/                Runtime config and category policy
+docs/                  Guides and operational notes
+  ├── VPS_DEPLOYMENT.md    Full Azure cloud setup guide
+  ├── cloud_secrets_workflow.md  How secrets are managed in Docker
+  ├── market_comparison.md       Why we built this vs. using n8n/Zapier
+  └── production_notes/          Real bugs we hit and how we fixed them
+scripts/               Automation scripts for both platforms
+  ├── windows_setup.ps1    Windows Task Scheduler installer
+  ├── manage_agent.bat     Quick start/stop control panel (Windows)
+  ├── backup.ps1           Database backup (Windows)
+  ├── backup.sh            Database backup (Linux/Cloud)
+  └── daemon.py            Background polling loop (Docker/Cloud)
+src/                   Core application logic
+tests/                 Test suite
+main.py                CLI entry point
+schema.sql             Database schema
+Dockerfile             Container image definition
+docker-compose.yml     Container orchestration
 ```
 
-## Quick start
+---
 
-### 1) Requirements
+## 🚀 Choose Your Deployment Path
 
-- Windows 10/11 (recommended for scheduler scripts)
-- Python 3.12
-- Gmail API OAuth credentials (`credentials.json`)
-- Gemini API key
+This project supports two ways to run. Pick the one that fits your situation:
 
-### 2) Setup
+| | **Option A: Local (Windows)** | **Option B: Cloud (Docker + Azure)** |
+| :--- | :--- | :--- |
+| **Best for** | Trying it out, running on your own PC | Always-on, 24/7 autonomous operation |
+| **Requires** | Windows 10/11, Python 3.12 | Azure account (free tier works) |
+| **Runs when** | Your PC is on and awake | Always — even when your PC is off |
+| **Cost** | Free (just Gemini API) | Free for 12 months on Azure free tier |
+
+---
+
+## Option A: Run Locally on Windows
+
+### 1. Prerequisites
+
+- Windows 10 or 11
+- Python 3.12 installed
+- A Google Cloud project with Gmail API enabled
+- `credentials.json` (OAuth client credentials from Google Cloud Console)
+- A Gemini API key (free tier available at [ai.google.dev](https://ai.google.dev))
+
+### 2. Install dependencies
 
 ```powershell
 py -3.12 -m pip install -r requirements.txt
+```
+
+### 3. Configure
+
+```powershell
 Copy-Item .env.example .env
 ```
 
-Then update `.env` with your values and place `credentials.json` in the project root.
+Open `.env` in any text editor and fill in your values:
+- `GEMINI_API_KEY` — your Gemini API key
+- `DAILY_CALL_CAP` — max AI calls per day (default: 100)
+- `MAX_EMAILS_PER_RUN` — emails to process per cycle (default: 20)
 
-### 3) Validate install
+Place your `credentials.json` in the project root folder.
 
-```powershell
-py -3.12 main.py status
-```
-
-### 4) Run once manually
+### 4. First run (generates your Gmail token)
 
 ```powershell
 py -3.12 main.py run
 ```
 
-## CLI commands
+A browser window will open asking you to sign in to Google and grant access. After you approve, a `token.json` file is created automatically. This only happens once.
 
-```powershell
-py -3.12 main.py run      # Ingest + process one cycle
-py -3.12 main.py status   # Queue health summary
-py -3.12 main.py digest   # Weekly report from DB
-py -3.12 main.py replay   # Requeue dead-letter emails
-py -3.12 main.py backup   # Run backup script
-```
+### 5. Set up automatic scheduling
 
-## Scheduler setup
-
-Register background tasks:
+To make the bot run every hour in the background (even when you're not looking):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\windows_setup.ps1
 ```
 
-This creates:
+This registers two Windows Scheduled Tasks:
+- **GmailTriageAgent** — runs `main.py run` every hour
+- **GmailTriageBackup** — backs up your database weekly
 
-- `GmailTriageAgent` (default hourly run)
-- `GmailTriageBackup` (weekly DB backup)
+### 6. Control panel
 
-Quick control panel:
+Double-click `scripts\manage_agent.bat` to get a simple menu:
+- Start/Stop the agent
+- Run manually
+- Check status
+
+### 7. Stop or remove the scheduler
+
+If you ever want to stop the bot or switch to cloud mode:
 
 ```powershell
-.\scripts\manage_agent.bat
+Unregister-ScheduledTask -TaskName 'GmailTriageAgent' -Confirm:$false
+Unregister-ScheduledTask -TaskName 'GmailTriageBackup' -Confirm:$false
 ```
 
-## Configuration
+---
 
-Main configuration file: `config/agent_config.yaml`
+## Option B: Deploy to the Cloud (Docker + Azure)
 
-Important settings:
+This runs the bot 24/7 on a cloud server so your PC can be completely off.
 
-- `categories`
-- `privacy_rules.exclude_sender_domains`
-- `model_settings.daily_call_cap`
-- `scheduler.poll_interval_minutes`
-- `queue_management.max_retries`
+### 1. Prerequisites
 
-## Docker & Cloud Deployment (Azure)
+- Everything from Option A's first run (you need a valid `token.json`)
+- An Azure account ([free tier](https://azure.microsoft.com/en-us/free/) gives you 12 months of a small VM)
+- Docker knowledge is **not** required — all commands are copy-paste
 
-The agent is fully containerized and designed for 24/7 cloud operation on Azure.
+### 2. Quick Docker test (optional, on your own PC)
 
-### Build and run locally with Docker
+If you have Docker Desktop installed, you can test the container locally first:
 
 ```powershell
 docker-compose up --build
 ```
 
-This mounts your local `app_data.db`, `token.json`, `.env`, and `credentials.json` into the container.
+### 3. Set up your Azure VM
 
-### Deploy to Azure VM
+Follow the complete step-by-step guide: **[`docs/VPS_DEPLOYMENT.md`](docs/VPS_DEPLOYMENT.md)**
 
-See [`docs/VPS_DEPLOYMENT.md`](docs/VPS_DEPLOYMENT.md) for the full step-by-step guide covering:
-- VM provisioning (Standard B2ats v2, Ubuntu 24.04 LTS)
-- Docker installation on the VM
-- Secure secret transfer via `scp`
-- Starting the agent with `docker compose up -d --build`
+It walks you through:
+- Creating a free-tier Azure VM (Ubuntu + Docker)
+- Transferring your code and secrets securely
+- Starting the bot as a background service
+- Monitoring logs remotely
 
-The agent runs as a background daemon and polls Gmail every hour via `scripts/daemon.py`.
+### 4. Verify it's running
 
-## Operations
+From your Windows terminal:
 
-- Logs: `logs/`
-- Backups:
-  - **Windows**: `scripts/backup.ps1` writes to `backups/`
-  - **Linux/Cloud**: `scripts/backup.sh` writes to `backups/`
-- Database: `app_data.db`
-- Restore path: keep latest known-good backup before upgrades
-
-### Live cloud monitoring
-
-```bash
-ssh -i <key.pem> azureuser@<ip>  # Log into Azure VM
+```powershell
+ssh -i "<your-key.pem>" azureuser@<your-vm-ip>
 cd ~/gmail-triage
-docker compose logs -f --tail=20  # Watch live logs
+docker compose logs --tail=20
 ```
+
+You should see lines like:
+```
+gmail-triage-agent | Gmail Triage Agent — Starting Run
+gmail-triage-agent | Sleeping for 60 minutes until next run...
+```
+
+---
+
+## CLI commands
+
+These work in both local and cloud environments:
+
+```
+main.py run      # Ingest + process one cycle
+main.py status   # Queue health summary
+main.py digest   # Weekly report from your processed emails
+main.py replay   # Requeue emails that failed processing
+main.py backup   # Run a database backup
+```
+
+**Local usage**: `py -3.12 main.py <command>`
+**Cloud usage**: `docker exec gmail-triage-agent python main.py <command>`
+
+## Configuration
+
+All settings live in `config/agent_config.yaml`:
+
+| Setting | What it controls |
+| :--- | :--- |
+| `categories` | The labels the AI can assign to emails |
+| `privacy_rules.exclude_sender_domains` | Domains to skip (e.g., your bank) |
+| `model_settings.daily_call_cap` | Max AI calls per day to control costs |
+| `scheduler.poll_interval_minutes` | How often the bot checks for new mail |
+| `queue_management.max_retries` | How many times to retry a failed email |
+
+## Operations & Maintenance
+
+### Backups
+- **Windows**: `scripts/backup.ps1` creates compressed copies of your database
+- **Linux/Cloud**: `scripts/backup.sh` does the same thing on the server
+- Both keep the last 7 backups and automatically delete older ones
+
+### Database
+- All email records are stored in `app_data.db` (SQLite)
+- Before any major upgrade, make a backup: `py -3.12 main.py backup`
+
+### Logs
+- Stored in the `logs/` directory
+- On Docker/Cloud, use `docker compose logs -f --tail=20` to watch live
 
 ## Security and privacy
 
-- Never commit `.env`, `token.json`, or `credentials.json`
-- Keep API keys and OAuth tokens local/private
-- Sensitive data is redacted before model calls
-- Use sender-domain exclusions for personal/banking mail
+- **Never commit** `.env`, `token.json`, or `credentials.json` to Git
+- The `.gitignore` is already configured to block these files
+- All sensitive data (phone numbers, IDs) is **redacted** before being sent to the AI
+- You can exclude specific sender domains (like your bank) from processing entirely
 
 ## Troubleshooting
 
-### Invalid Gemini key
+### "Invalid Gemini key" error
+Update your `.env` file with a valid key and rerun the agent.
 
-Update `.env` with a valid key and rerun:
+### "OAuth token expired" or login issues
+Delete `token.json` and run `py -3.12 main.py run` again. A browser window will open to re-authorize.
 
-```powershell
-py -3.12 main.py run
+### Emails stuck in "dead letter" queue
+Check the logs for the root cause, fix it, then replay:
 ```
-
-### OAuth token issues
-
-Delete `token.json`, then rerun `py -3.12 main.py run` to re-authorize.
-
-### Growing dead-letter queue
-
-Inspect logs, fix root cause, then replay:
-
-```powershell
 py -3.12 main.py replay
 ```
+
+## Further reading
+
+- [Azure Cloud Deployment Guide](docs/VPS_DEPLOYMENT.md) — Full VM setup walkthrough
+- [Secrets & Security Workflow](docs/cloud_secrets_workflow.md) — How credentials are handled in Docker
+- [Architecture Comparison](docs/market_comparison.md) — Why we built this instead of using n8n or Zapier
+- [Production Notes](docs/production_notes/) — Real bugs we encountered and how we solved them
 
 ## Contributing
 
 Contributions are welcome. Please review:
-
 - `CONTRIBUTING.md`
 - `CODE_OF_CONDUCT.md`
 

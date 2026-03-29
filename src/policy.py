@@ -32,6 +32,8 @@ class PrivacyPolicy:
             if count > 0:
                 redacted_text = cls.PHONE_REGEX.sub('[REDACTED_PHONE]', redacted_text)
                 logger.debug(f"Redacted {count} phone numbers.")
+                if re.search(r'\b\d{10}\b', redacted_text):
+                    logger.warning("⚠ Phone redaction may have missed some digits.")
 
         if redact_patterns.get('student_ids'):
             count = len(cls.STUDENT_ID_REGEX.findall(redacted_text))
