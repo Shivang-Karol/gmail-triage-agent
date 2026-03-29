@@ -62,3 +62,31 @@ cd ~/gmail-triage
 git pull origin main
 docker compose up -d --build
 ```
+```
+
+---
+
+## 3. Git Commands Cheat Sheet
+
+Here is a quick reference guide from basic everyday commands to advanced recovery commands.
+
+### The Basics (Everyday Usage)
+* `git status` - Tells you what branch you're on and what files are modified.
+* `git add .` - Stages **all** modified files to be committed.
+* `git add src/file.py` - Stages only a **specific** file to be committed.
+* `git commit -m "your message"` - Saves your staged changes locally with a descriptive message.
+* `git push` - Uploads your committed changes to GitHub.
+* `git pull` - Downloads the latest changes from GitHub to your laptop.
+
+### Branching & Navigation
+* `git branch` - Lists all your local branches.
+* `git switch <branch-name>` - Moves you to an existing branch.
+* `git switch -c <new-branch-name>` - Creates a new branch and immediately switches to it.
+* `git switch main` - Returns you to your main code.
+
+### Advanced (Undo & Fix Mistakes)
+* `git log` - Shows the history of all commits. Press `q` to exit.
+* `git restore src/file.py` - **DANGER:** Undoes all unsaved changes in a file, reverting it to the last commit.
+* `git reset HEAD~1` - **DANGER:** Undoes your very last commit, but keeps the file modifications so you can edit and try committing again. 
+* `git stash` - Temporarily hides your uncommitted changes so you can switch branches.
+* `git stash pop` - Brings your hidden changes back.
