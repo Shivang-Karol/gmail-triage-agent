@@ -4,14 +4,18 @@
 # --- Category Definitions (Strict Schema) ---
 # Gemini will only be allowed to pick from these categories.
 categories:
-  - PLACEMENT             # Job offers, direct recruitment outreach
-  - INTERNSHIP            # Internship applications, portals, offers
-  - INTERVIEW_SCHEDULE    # Specific dates/times for interviews or tests
-  - DEADLINE_ALERT        # Upcoming submission dates
-  - REJECTION             # "We regret to inform you" style emails
-  - NEWSLETTER            # Generic tech or college newsletters
-  - SPAM                  # Irrelevant marketing
-  - OTHER                 # Requires human review or doesn't fit
+  - CAREER_OPPORTUNITY
+  - INTERVIEW_CONFIRMATION
+  - ASSESSMENT_NOTIFICATION
+  - OFFER_LETTER
+  - REJECTION
+  - ACADEMIC_ALERTS
+  - SOCIAL_NOTIFICATIONS
+  - FINANCIAL_ALERTS
+  - NEWSLETTER
+  - PROMOTION
+  - SPAM
+  - UNCATEGORIZED
 
 # --- Privacy & Data Governance ---
 privacy_rules:

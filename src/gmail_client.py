@@ -59,15 +59,19 @@ def setup_labels(service, required_labels):
     # Gmail API label color options
     # See: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
     LABEL_COLORS = {
-        'PLACEMENT':          {'textColor': '#ffffff', 'backgroundColor': '#fb4c2f'},  # Red
-        'INTERNSHIP':         {'textColor': '#ffffff', 'backgroundColor': '#16a765'},  # Green
-        'INTERVIEW_SCHEDULE': {'textColor': '#ffffff', 'backgroundColor': '#ff7537'},  # Orange
-        'DEADLINE_ALERT':     {'textColor': '#ffffff', 'backgroundColor': '#ffad47'},  # Yellow-Orange
-        'REJECTION':          {'textColor': '#ffffff', 'backgroundColor': '#98a0a6'},  # Gray
-        'NEWSLETTER':         {'textColor': '#ffffff', 'backgroundColor': '#4986e7'},  # Blue
-        'SPAM':               {'textColor': '#ffffff', 'backgroundColor': '#b99aff'},  # Purple
-        'OTHER':              {'textColor': '#ffffff', 'backgroundColor': '#68dfa9'},  # Teal
-        'REVIEW_NEEDED':      {'textColor': '#ffffff', 'backgroundColor': '#e07798'},  # Pink
+        'CAREER_OPPORTUNITY':    {'textColor': '#ffffff', 'backgroundColor': '#fb4c2f'},  # Red
+        'INTERVIEW_CONFIRMATION': {'textColor': '#ffffff', 'backgroundColor': '#ff7537'},  # Orange
+        'ASSESSMENT_NOTIFICATION': {'textColor': '#ffffff', 'backgroundColor': '#ffad47'},  # Yellow-Orange
+        'OFFER_LETTER':          {'textColor': '#ffffff', 'backgroundColor': '#16a765'},  # Green
+        'REJECTION':             {'textColor': '#ffffff', 'backgroundColor': '#98a0a6'},  # Gray
+        'ACADEMIC_ALERTS':       {'textColor': '#ffffff', 'backgroundColor': '#4285f4'},  # Blue
+        'FINANCIAL_ALERTS':      {'textColor': '#ffffff', 'backgroundColor': '#f4b400'},  # Gold
+        'SOCIAL_NOTIFICATIONS':  {'textColor': '#ffffff', 'backgroundColor': '#b99aff'},  # Purple
+        'NEWSLETTER':            {'textColor': '#ffffff', 'backgroundColor': '#4986e7'},  # Light Blue
+        'PROMOTION':             {'textColor': '#ffffff', 'backgroundColor': '#68dfa9'},  # Teal
+        'SPAM':                  {'textColor': '#ffffff', 'backgroundColor': '#999999'},  # Dark Gray
+        'UNCATEGORIZED':         {'textColor': '#ffffff', 'backgroundColor': '#cccccc'},  # Silver
+        'REVIEW_NEEDED':         {'textColor': '#ffffff', 'backgroundColor': '#e07798'},  # Pink
     }
     
     results = service.users().labels().list(userId='me').execute()

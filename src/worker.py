@@ -18,7 +18,7 @@ def process_queue():
     daily_cap = config.get('model_settings', {}).get('daily_call_cap', 300)
     
     service = get_gmail_service()
-    categories = config.get("categories", ["OTHER"])
+    categories = config.get("categories", ["UNCATEGORIZED"])
     label_map = setup_labels(service, categories + ["REVIEW_NEEDED"])
 
     gemini_available = True
@@ -44,11 +44,11 @@ def process_queue():
             attempt_count = email_record['attempt_count']
             
             # --- Initialize loop-scope variables to avoid UnboundLocalError ---
-            ml_result = {"category": "OTHER", "confidence": 0.0}
+            ml_result = {"category": "UNCATEGORIZED", "confidence": 0.0}
             used_model = "none"
             latency = 0
             target_label_id = None
-            category = "OTHER"
+            category = "UNCATEGORIZED"
             confidence = 0.0
             
             try:
@@ -62,7 +62,10 @@ def process_queue():
                 body_text = enrich_email_with_links(body_text, max_links=3)
 
                 max_tokens = config.get('model_settings', {}).get('max_tokens_per_email', 1500)
-                body_text = body_text[:max_tokens * 4]
+                char_limit = max_tokens * 4
+                if len(body_text) > char_limit:
+                    logger.info(f"Truncated {msg_id}: {len(body_text)} → {char_limit} chars")
+                body_text = body_text[:char_limit]
 
                 start_time = time.time()
                 
@@ -84,15 +87,8 @@ def process_queue():
                     used_model = "fallback_rules"
                 
                 latency = int((time.time() - start_time) * 1000)
-                category = ml_result.get('category', 'OTHER')
+                category = ml_result.get('category', 'UNCATEGORIZED')
                 confidence = ml_result.get('confidence', 0.0)
-
-                # Dynamic labels
-                suggested = ml_result.get('suggested_new_label')
-                if suggested and suggested not in label_map:
-                    new_labels = setup_labels(service, [suggested])
-                    label_map.update(new_labels)
-                    category = suggested
 
                 # Determine Label
                 threshold = config.get('model_settings', {}).get('confidence_auto_label_threshold', 0.80)

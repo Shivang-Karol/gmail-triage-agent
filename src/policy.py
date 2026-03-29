@@ -55,41 +55,78 @@ class FallbackClassifier:
     Deterministic keyword-based classifier.
     Used when Gemini API is unavailable (outage, rate limit exhaustion, quota exceeded).
     Results are marked with low confidence so they can be re-evaluated later.
+
+    IMPORTANT: Category names MUST match the official 12-category taxonomy
+    defined in config/agent_config.yaml. Do NOT invent new names here.
     """
-    
+
+    # Ordered by the same precedence as the Gemini prompt (high → low priority)
     RULES = [
         {
-            "category": "PLACEMENT",
-            "keywords": ["placement", "job offer", "recruitment", "hiring", "we are pleased",
-                         "selected", "shortlisted", "offer letter", "campus drive"],
+            "category": "OFFER_LETTER",
+            "keywords": ["offer letter", "we are pleased to offer", "compensation package",
+                         "onboarding", "joining date", "welcome aboard"],
         },
         {
-            "category": "INTERNSHIP",
-            "keywords": ["internship", "intern", "summer training", "winter training",
-                         "stipend", "trainee", "apprentice"],
+            "category": "INTERVIEW_CONFIRMATION",
+            "keywords": ["interview scheduled", "interview invitation", "zoom meeting",
+                         "google meet", "appear for interview", "interview link",
+                         "calendar invite"],
         },
         {
-            "category": "INTERVIEW_SCHEDULE",
-            "keywords": ["interview", "aptitude test", "coding round", "assessment",
-                         "scheduled for", "appear for", "test link"],
+            "category": "ASSESSMENT_NOTIFICATION",
+            "keywords": ["coding assessment", "online test", "hackerrank", "leetcode",
+                         "aptitude test", "test link", "coding round", "technical round"],
         },
         {
-            "category": "DEADLINE_ALERT",
-            "keywords": ["deadline", "last date", "expires on", "submit by",
-                         "registration closes", "apply before"],
+            "category": "CAREER_OPPORTUNITY",
+            "keywords": ["job opening", "hiring", "recruitment", "we are looking for",
+                         "internship", "intern", "placement", "campus drive",
+                         "shortlisted", "referral", "stipend", "apply now"],
         },
         {
             "category": "REJECTION",
             "keywords": ["regret to inform", "not selected", "unable to proceed",
-                         "not shortlisted", "unfortunately"],
+                         "not shortlisted", "unfortunately", "we will not be moving forward"],
+        },
+        {
+            "category": "ACADEMIC_ALERTS",
+            "keywords": ["nptel", "exam date", "college circular", "deadline",
+                         "last date", "registration closes", "submit by",
+                         "classroom", "assignment due"],
+        },
+        {
+            "category": "FINANCIAL_ALERTS",
+            "keywords": ["transaction", "payment", "bank alert", "credited",
+                         "debited", "upi", "account statement"],
+        },
+        {
+            "category": "SOCIAL_NOTIFICATIONS",
+            "keywords": ["linkedin", "github", "skool", "someone viewed your profile",
+                         "new follower", "mentioned you", "pull request"],
+        },
+        {
+            "category": "NEWSLETTER",
+            "keywords": ["newsletter", "weekly digest", "roundup", "substack",
+                         "unsubscribe", "blog post"],
+        },
+        {
+            "category": "PROMOTION",
+            "keywords": ["% off", "limited time", "discount", "sale", "shop now",
+                         "exclusive offer", "coupon", "promo code"],
+        },
+        {
+            "category": "SPAM",
+            "keywords": ["win a prize", "click here to claim", "nigerian prince",
+                         "act now", "you have been selected to receive"],
         },
     ]
-    
+
     @classmethod
     def classify(cls, text: str) -> dict:
         """Returns a classification dict matching Gemini's schema but with low confidence."""
         text_lower = text.lower()
-        
+
         for rule in cls.RULES:
             for keyword in rule["keywords"]:
                 if keyword in text_lower:
@@ -99,10 +136,10 @@ class FallbackClassifier:
                         "reasoning": f"Fallback: matched keyword '{keyword}' (Gemini unavailable)",
                         "summary": f"Keyword-matched as {rule['category']} during model outage"
                     }
-        
-        # No keywords matched
+
+        # No keywords matched — use official fallback label
         return {
-            "category": "OTHER",
+            "category": "UNCATEGORIZED",
             "confidence": 0.30,
             "reasoning": "Fallback: no keywords matched (Gemini unavailable)",
             "summary": "Unclassified during model outage"
