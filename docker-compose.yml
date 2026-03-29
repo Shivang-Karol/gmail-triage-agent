@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  gmail-triage:
+  agent:
     build: .
     container_name: gmail-triage-agent
     restart: unless-stopped
@@ -14,6 +12,6 @@ services:
       # Map logs for easy access
       - ./logs:/app/logs
       # Bind secrets in read-only mode so the container cannot modify them
-      - ./token.json:/app/token.json:ro
+      - ./token.json:/app/token.json
       - ./credentials.json:/app/credentials.json:ro
       - ./.env:/app/.env:ro

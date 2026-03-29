@@ -1,6 +1,8 @@
 # Gmail Triage Agent - Private Repo Guard
 
 # Secrets & Credentials (NEVER UPLOAD)
+secrets/
+*.pem
 .env
 token.json
 credentials.json
