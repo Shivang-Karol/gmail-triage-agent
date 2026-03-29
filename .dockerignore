@@ -1,0 +1,20 @@
+.git
+.github
+__pycache__
+*.pyc
+
+# Local runtime state and logs MUST NOT be baked into the image
+logs/
+app_data.db
+.agent.lock
+
+# Secrets MUST NOT be baked into the image
+.env
+token.json
+credentials.json
+
+# Exclude unnecessary code
+tests/
+scripts/backups/
+scripts/windows_setup.ps1
+scripts/backup.ps1

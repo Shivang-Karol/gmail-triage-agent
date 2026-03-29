@@ -16,6 +16,9 @@ logs/
 *.log
 debug_output.txt
 
+# Backups
+scripts/backups/
+
 # Python Environment & Build
 __pycache__/
 *.py[cod]

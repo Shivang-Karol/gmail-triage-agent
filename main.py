@@ -128,13 +128,23 @@ def cmd_digest():
     print(generate_weekly_report())
 
 def cmd_backup():
-    """Trigger the PowerShell backup script."""
+    """Trigger the backup script based on the current OS."""
     print("\nTriggering database backup...")
-    backup_script = BASE_DIR / "scripts" / "backup.ps1"
-    try:
-        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(backup_script)], check=True)
-    except Exception as e:
-        print(f"❌ Backup failed: {e}")
+    
+    if sys.platform == "win32":
+        backup_script = BASE_DIR / "scripts" / "backup.ps1"
+        try:
+            subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(backup_script)], check=True)
+        except Exception as e:
+            print(f"❌ Backup failed: {e}")
+    else:
+        backup_script = BASE_DIR / "scripts" / "backup.sh"
+        try:
+            # Ensure the script is executable
+            subprocess.run(["chmod", "+x", str(backup_script)], check=True)
+            subprocess.run(["/bin/bash", str(backup_script)], check=True)
+        except Exception as e:
+            print(f"❌ Backup failed: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gmail Triage Agent")

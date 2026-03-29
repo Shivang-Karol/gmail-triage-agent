@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
+import os
 from pathlib import Path
 import logging
 
@@ -8,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Constants for DB connection string
-DB_PATH = Path(__file__).parent.parent / "app_data.db"
+DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).parent.parent / "app_data.db"))
 SCHEMA_PATH = Path(__file__).parent.parent / "schema.sql"
 
 def get_connection():
