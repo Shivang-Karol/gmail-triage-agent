@@ -1,47 +1,48 @@
-# Gmail Triage Agent
+# 📬 Gmail Triage Agent
 
-An AI-powered Gmail assistant that automatically reads, classifies, and labels your incoming emails. Built for students and professionals who don't want to miss placement, internship, interview, or deadline updates buried in a noisy inbox.
+An AI-powered Gmail assistant that protects your focus by automatically reading, classifying, and labeling your incoming emails. 
 
-## What does it do?
+Built for students and professionals who are tired of missing placement letters, internship interviews, or critical deadlines buried under a mountain of newsletters and spam. You write the rules, your private AI organizes the inbox.
 
-Every hour, this bot:
-1. **Reads** your new Gmail messages
-2. **Classifies** each one using Google's Gemini AI (or keyword-based fallback rules)
-3. **Labels** them in your Gmail (e.g., `Placement`, `Academic`, `Finance`, `Spam`)
-4. **Logs** everything to a local database so nothing is ever lost
+## ✨ What does it actually do?
 
-You can run it **locally on your Windows PC** or deploy it to the **cloud on an Azure VM** for 24/7 hands-free operation. Both paths are fully documented below.
+Every hour, this bot wakes up and:
+1. **Reads** your new, unread Gmail messages.
+2. **Redacts** sensitive PII (like phone numbers) so they never leave your machine.
+3. **Classifies** each email using Google's Gemini AI (or local keyword fallback rules).
+4. **Labels** them directly in your Gmail (e.g., `Placement`, `Academic`, `Finance`).
+5. **Logs** everything to a local SQLite database so absolutely nothing is ever lost.
 
-## Key features
+You can run it **locally on your Windows PC** while you study, or deploy it to a **free cloud VM** for 24/7 hands-free magic. Both paths are fully documented below.
 
-- Queue-based pipeline using SQLite — if power goes out, it picks up where it left off
-- AI classification with confidence scoring (powered by Google Gemini)
-- Automatic fallback to keyword rules when the AI quota runs out
-- Cost guardrails (`daily_call_cap`) to prevent burning through API credits
-- Dead-letter recovery — emails that fail processing can be replayed
-- Weekly digest reports from your processed email history
-- Scheduled backups with automatic cleanup of old files
-- PII redaction — sensitive info (phone numbers, IDs) is stripped before reaching the AI
+## 🛠️ Key Features
 
-## Architecture
+- **Resilient Queue** 🧱: Powered by SQLite — if the power goes out, it picks up exactly where it left off.
+- **AI Classification** 🧠: Highly accurate categorization using Gemini 2.5 Flash.
+- **Fallback Safe** 🛟: Automatically switches to local keyword rules if your AI quota runs out.
+- **Cost Guardrails** 💸: Strict `daily_call_cap` ensures you never accidentally burn through API credits.
+- **Dead-Letter Recovery** ♻️: Emails that fail processing aren't skipped—they are queued to be replayed.
+- **Data Sovereignty** 🔒: Phone numbers, student IDs, and SSNs are locally stripped *before* any text goes to the AI.
+
+## 🏗️ Architecture
 
 ```mermaid
 graph LR
-    A[Gmail Inbox] -->|Ingest| B[SQLite Queue]
+    A[Gmail Inbox] -->|Ingest| B[(SQLite Queue)]
     B -->|Lease batch| C[Worker]
-    C -->|Redact PII| D[Policy Layer]
-    D -->|Classify| E[Gemini]
-    E -->|Category JSON| C
-    C -->|Apply labels| A
-    C -->|Failed after retries| F[Dead Letter]
+    C -->|Strip PII| D[Policy Layer]
+    D -->|Classify| E[Gemini AI]
+    E -->|JSON Output| C
+    C -->|Apply Labels| A
+    C -->|Failed?| F[Dead Letter]
 ```
 
-## Repository layout
+## 📂 Repository Layout
 
 ```text
 config/                Runtime config and category policy
 docs/                  Guides and operational notes
-  ├── VPS_DEPLOYMENT.md    Full Azure cloud setup guide
+  ├── vps_deployment.md    Full Azure cloud setup guide
   ├── cloud_secrets_workflow.md  How secrets are managed in Docker
   ├── market_comparison.md       Why we built this vs. using n8n/Zapier
   └── production_notes/          Real bugs we hit and how we fixed them
@@ -63,52 +64,47 @@ docker-compose.yml     Container orchestration
 
 ## 🚀 Choose Your Deployment Path
 
-This project supports two ways to run. Pick the one that fits your situation:
+This project supports two ways to run. Pick the one that fits your life:
 
 | | **Option A: Local (Windows)** | **Option B: Cloud (Docker + Azure)** |
 | :--- | :--- | :--- |
-| **Best for** | Trying it out, running on your own PC | Always-on, 24/7 autonomous operation |
-| **Requires** | Windows 10/11, Python 3.12 | Azure account (free tier works) |
-| **Runs when** | Your PC is on and awake | Always — even when your PC is off |
-| **Cost** | Free (just Gemini API) | Free for 12 months on Azure free tier |
+| **Best for** | Trying it out, running strictly on your own hardware | Always-on, 24/7 autonomous operation |
+| **Requires** | Windows 10/11, Python 3.12 | Azure account (free tier works perfect) |
+| **Runs when** | Your PC is awake | Always — even when your PC is asleep |
+| **Cost** | 100% Free | Free for 12 months on Azure Free Tier |
 
 ---
 
-## Option A: Run Locally on Windows
+## 💻 Option A: Run Locally on Windows
+
+Perfect if you want everything kept strictly on your own hardware.
 
 ### 1. Prerequisites
+- Windows 10 or 11 with Python 3.12 installed
+- A Google Cloud project with the **Gmail API** enabled
+- Your `credentials.json` from the Google Cloud Console
+- A Google Gemini API key (Grab a free one at [ai.google.dev](https://ai.google.dev))
 
-- Windows 10 or 11
-- Python 3.12 installed
-- A Google Cloud project with Gmail API enabled
-- `credentials.json` (OAuth client credentials from Google Cloud Console)
-- A Gemini API key (free tier available at [ai.google.dev](https://ai.google.dev))
-
-### 2. Install dependencies
-
+### 2. Install Dependencies
 ```powershell
 py -3.12 -m pip install -r requirements.txt
 ```
 
-### 3. Configure
-
+### 3. Configure Your Environment
 ```powershell
 Copy-Item .env.example .env
 ```
+Open `.env` in any text editor and drop in your keys:
+- `GEMINI_API_KEY` — Your Gemini API key
+- `LOG_LEVEL` — (optional) set to `DEBUG` if you like seeing the matrix, `INFO` otherwise.
 
-Open `.env` in any text editor and fill in your values:
-- `GEMINI_API_KEY` — your Gemini API key
-- `LOG_LEVEL` — (optional) set to DEBUG for verbose logs, or INFO for standard
+*Make sure your `credentials.json` is sitting in the same folder!*
 
-Place your `credentials.json` in the project root folder.
-
-### 4. First run (generates your Gmail token)
-
+### 4. The First Run (Authentication)
 ```powershell
 py -3.12 main.py run
 ```
-
-A browser window will open asking you to sign in to Google and grant access. After you approve, a `token.json` file is created automatically. This only happens once.
+A browser window will pop open asking you to grant the bot access to your Gmail. After you approve, a `token.json` file is magically created. You only do this once.
 
 ### 5. Set up automatic scheduling
 
@@ -117,22 +113,15 @@ To make the bot run every hour in the background (even when you're not looking):
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\windows_setup.ps1
 ```
+This sets up two Windows Scheduled Tasks:
+- **GmailTriageAgent** — Checks your email every hour
+- **GmailTriageBackup** — Backs up your database weekly
 
-This registers two Windows Scheduled Tasks:
-- **GmailTriageAgent** — runs `main.py run` every hour
-- **GmailTriageBackup** — backs up your database weekly
+### 6. Control Panel
+Double-click `scripts\manage_agent.bat` anytime to get a nice graphical menu to Start/Stop the agent or check its health.
 
-### 6. Control panel
-
-Double-click `scripts\manage_agent.bat` to get a simple menu:
-- Start/Stop the agent
-- Run manually
-- Check status
-
-### 7. Stop or remove the scheduler
-
+### 7. Stop or Remove the Scheduler
 If you ever want to stop the bot or switch to cloud mode:
-
 ```powershell
 Unregister-ScheduledTask -TaskName 'GmailTriageAgent' -Confirm:$false
 Unregister-ScheduledTask -TaskName 'GmailTriageBackup' -Confirm:$false
@@ -140,27 +129,19 @@ Unregister-ScheduledTask -TaskName 'GmailTriageBackup' -Confirm:$false
 
 ---
 
-## Option B: Deploy to the Cloud (Docker + Azure)
+## ☁️ Option B: Deploy to the Cloud (Docker)
 
-This runs the bot 24/7 on a cloud server so your PC can be completely off.
+Want the true "AI Agent" experience where it works for you 24/7 while your laptop is closed? 
 
 ### 1. Prerequisites
+- Everything from Option A's "First Run" (You **must** have a valid `token.json` generated locally first!)
+- An Azure account (or any VPS).
+- Docker knowledge is **not** required.
 
-- Everything from Option A's first run (you need a valid `token.json`)
-- An Azure account ([free tier](https://azure.microsoft.com/en-us/free/) gives you 12 months of a small VM)
-- Docker knowledge is **not** required — all commands are copy-paste
+### 2. The Step-by-Step Guide
+Because deploying servers can be tricky, we wrote a dedicated, copy-paste guide just for this: 
 
-### 2. Quick Docker test (optional, on your own PC)
-
-If you have Docker Desktop installed, you can test the container locally first:
-
-```powershell
-docker-compose up --build
-```
-
-### 3. Set up your Azure VM
-
-Follow the complete step-by-step guide: **[`docs/VPS_DEPLOYMENT.md`](docs/VPS_DEPLOYMENT.md)**
+👉 **[`docs/vps_deployment.md`](docs/vps_deployment.md)** 👈
 
 It walks you through:
 - Creating a free-tier Azure VM (Ubuntu + Docker)
@@ -168,42 +149,32 @@ It walks you through:
 - Starting the bot as a background service
 - Monitoring logs remotely
 
-### 4. Verify it's running
-
-From your Windows terminal:
-
-```powershell
+### 3. Verify It's Alive
+From your local terminal, SSH into your server and check the heartbeats:
+```bash
 ssh -i "<your-key.pem>" azureuser@<your-vm-ip>
 cd ~/gmail-triage
-docker compose logs --tail=20
-```
-
-You should see lines like:
-```
-gmail-triage-agent | Gmail Triage Agent — Starting Run
-gmail-triage-agent | Sleeping for 60 minutes until next run...
+docker compose logs -f --tail=20
 ```
 
 ---
 
-## CLI commands
+## 🎛️ CLI Commands & Operations
 
-These work in both local and cloud environments:
+Whether you are local or in the cloud, these commands manage your bot:
 
+```bash
+python main.py run      # Ingest your inbox and classify a batch of emails
+python main.py status   # Check the health of your queue
+python main.py digest   # Weekly report from your processed emails
+python main.py replay   # Re-queue any emails that got stuck or failed
+python main.py backup   # Force a manual database backup
 ```
-main.py run      # Ingest + process one cycle
-main.py status   # Queue health summary
-main.py digest   # Weekly report from your processed emails
-main.py replay   # Requeue emails that failed processing
-main.py backup   # Run a database backup
-```
+*(If on Docker, prepend commands with docker execution: `docker exec gmail-triage-agent python main.py <command>`)*
 
-**Local usage**: `py -3.12 main.py <command>`
-**Cloud usage**: `docker exec gmail-triage-agent python main.py <command>`
+## ⚙️ Configuration
 
-## Configuration
-
-All settings live in `config/agent_config.yaml`:
+All the brains of the operation live in **`config/agent_config.yaml`**:
 
 | Setting | What it controls |
 | :--- | :--- |
@@ -213,7 +184,7 @@ All settings live in `config/agent_config.yaml`:
 | `scheduler.poll_interval_minutes` | (Local Setup Only) How often the local Windows Task Scheduler runs the check |
 | `queue_management.max_retries` | How many times to retry a failed email |
 
-## Operations & Maintenance
+## 🛠️ Operations & Maintenance
 
 ### Backups
 - **Windows**: `scripts/backup.ps1` creates compressed copies of your database
@@ -222,20 +193,18 @@ All settings live in `config/agent_config.yaml`:
 
 ### Database
 - All email records are stored in `app_data.db` (SQLite)
-- Before any major upgrade, make a backup: `py -3.12 main.py backup`
+- Before any major upgrade, make a priority backup: `py -3.12 main.py backup`
 
 ### Logs
-- Stored in the `logs/` directory
+- Stored locally in the `logs/` directory
 - On Docker/Cloud, use `docker compose logs -f --tail=20` to watch live
 
-## Security and privacy
+## 🛡️ Security & Privacy Note
 
-- **Never commit** `.env`, `token.json`, or `credentials.json` to Git
-- The `.gitignore` is already configured to block these files
-- All sensitive data (phone numbers, IDs) is **redacted** before being sent to the AI
-- You can exclude specific sender domains (like your bank) from processing entirely
+- **Never commit** `.env`, `token.json`, or `credentials.json` to Git. (The `.gitignore` has your back, but be careful).
+- Remember: Your unredacted emails *never* leave your environment. Read our [market comparison](docs/market_comparison.md) for a deep dive into why this is safer than using Zapier or n8n.
 
-## Troubleshooting
+## 🚑 Troubleshooting
 
 ### "Invalid Gemini key" error
 Update your `.env` file with a valid key and rerun the agent.
@@ -245,23 +214,19 @@ Delete `token.json` and run `py -3.12 main.py run` again. A browser window will 
 
 ### Emails stuck in "dead letter" queue
 Check the logs for the root cause, fix it, then replay:
-```
+```powershell
 py -3.12 main.py replay
 ```
 
-## Further reading
+## 📚 Further Reading
 
-- [Azure Cloud Deployment Guide](docs/VPS_DEPLOYMENT.md) — Full VM setup walkthrough
-- [Secrets & Security Workflow](docs/cloud_secrets_workflow.md) — How credentials are handled in Docker
-- [Architecture Comparison](docs/market_comparison.md) — Why we built this instead of using n8n or Zapier
-- [Production Notes](docs/production_notes/) — Real bugs we encountered and how we solved them
+Looking to dive deeper?
+- [Azure Cloud Deployment Guide](docs/vps_deployment.md) — Full VM setup walkthrough.
+- [Architecture Comparison](docs/market_comparison.md) — Why custom Python beats Low-Code platforms.
+- [Secrets Workflow](docs/cloud_secrets_workflow.md) — How we securely manage API keys in Docker.
+- [Production Notes](docs/production_notes/) — Short, readable stories about bugs we hit and how we fixed them.
 
-## Contributing
+## 🤝 Contributing & License
 
-Contributions are welcome. Please review:
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-
-## License
-
-This project is licensed under the terms in `LICENSE`.
+Contributions are always welcome. Please see `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`. 
+This project is licensed under the MIT License (`LICENSE`).
