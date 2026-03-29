@@ -1,0 +1,33 @@
+# Gmail Triage Agent - Private Repo Guard
+
+# Secrets & Credentials (NEVER UPLOAD)
+.env
+token.json
+credentials.json
+
+# Local Database & State (NEVER UPLOAD)
+app_data.db
+*.db-journal
+*.db-wal
+.agent.lock
+
+# Logs & Temporary Files
+logs/
+*.log
+debug_output.txt
+
+# Python Environment & Build
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# OS / Editor Specific
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

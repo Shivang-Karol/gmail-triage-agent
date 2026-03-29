@@ -1,0 +1,47 @@
+# Gmail Triage Agent Configuration
+# Defines how the local agent interacts with Gmail and Gemini
+
+# --- Category Definitions (Strict Schema) ---
+# Gemini will only be allowed to pick from these categories.
+categories:
+  - PLACEMENT             # Job offers, direct recruitment outreach
+  - INTERNSHIP            # Internship applications, portals, offers
+  - INTERVIEW_SCHEDULE    # Specific dates/times for interviews or tests
+  - DEADLINE_ALERT        # Upcoming submission dates
+  - REJECTION             # "We regret to inform you" style emails
+  - NEWSLETTER            # Generic tech or college newsletters
+  - SPAM                  # Irrelevant marketing
+  - OTHER                 # Requires human review or doesn't fit
+
+# --- Privacy & Data Governance ---
+privacy_rules:
+  # Do not ingest or send these to AI under any circumstances
+  exclude_sender_domains:
+    - "chase.com"
+    - "bankofamerica.com"
+    - "paypal.com"
+    # Add your family domains or personal banking here
+  
+  # Regex patterns to redact from email bodies before API calls
+  redact_patterns:
+    phone_numbers: true
+    student_ids: true
+    ssn: true
+
+# --- Model & API Guardrails ---
+model_settings:
+  name: "gemini-2.5-flash"  # Fast, cheap, capable of structuring JSON
+  max_tokens_per_email: 1500 # Don't send 50-page PDFs
+  daily_call_cap: 300       # Hard limit to prevent runaway loops
+  confidence_auto_label_threshold: 0.80
+
+# --- Operational Overrides ---
+scheduler:
+  poll_interval_minutes: 10
+  batch_size: 5
+  single_instance_timeout_minutes: 45
+
+queue_management:
+  max_retries: 5
+  lease_duration_minutes: 5
+  retention_history_days: 90
