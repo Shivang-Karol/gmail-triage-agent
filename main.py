@@ -130,7 +130,7 @@ def cmd_digest():
 def cmd_backup():
     """Trigger the PowerShell backup script."""
     print("\nTriggering database backup...")
-    backup_script = BASE_DIR / "backup.ps1"
+    backup_script = BASE_DIR / "scripts" / "backup.ps1"
     try:
         subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(backup_script)], check=True)
     except Exception as e:

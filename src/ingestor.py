@@ -9,12 +9,11 @@ logger = logging.getLogger(__name__)
 
 # Load configs
 BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = BASE_DIR / "agent_config.yaml"
+from src.config_loader import get_config
 
 def get_excluded_domains():
     """Reads the privacy rules from the config file."""
-    with open(CONFIG_PATH, 'r') as f:
-        config = yaml.safe_load(f)
+    config = get_config()
     return config.get('privacy_rules', {}).get('exclude_sender_domains', [])
 
 def extract_domain(email_address):

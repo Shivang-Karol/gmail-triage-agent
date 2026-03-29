@@ -23,12 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Load config and keys
 BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = BASE_DIR / "agent_config.yaml"
+from src.config_loader import get_config
 load_dotenv(BASE_DIR / ".env")
-
-def get_config():
-    with open(CONFIG_PATH, 'r') as f:
-        return yaml.safe_load(f)
 
 # =============================================
 # Pydantic Schema (replaces the old dict schema)

@@ -8,10 +8,11 @@ $ErrorActionPreference = "Stop"
 # --- Configuration ---
 $TaskName = "GmailTriageAgent"
 $BackupTaskName = "GmailTriageBackup"
-$ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ProjectDir = Split-Path -Parent $ScriptDir
 $PythonPath = (py -3.12 -c "import sys; print(sys.executable)") 
 $ScriptPath = Join-Path $ProjectDir "main.py"
-$BackupScript = Join-Path $ProjectDir "backup.ps1"
+$BackupScript = Join-Path $ScriptDir "backup.ps1"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan

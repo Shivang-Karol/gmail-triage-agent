@@ -16,10 +16,8 @@ def main():
         service = get_gmail_service()
         print("\n✅ Authentication Successful! A token.json file was created.")
         
-        # Load the required categories from config and ensure they exist as Gmail Labels
-        config_path = Path(__file__).parent.parent / "agent_config.yaml"
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
+        from src.config_loader import get_config
+        config = get_config()
             
         required_categories = config.get("categories", [])
         print(f"\nChecking your Gmail account for {len(required_categories)} necessary Agent labels...")
