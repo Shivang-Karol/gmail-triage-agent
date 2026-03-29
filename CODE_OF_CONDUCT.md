@@ -52,3 +52,7 @@ the consequences for any action they deem in violation of this Code of Conduct:
 2. **Warning**
 3. **Temporary Ban**
 4. **Permanent Ban**
+
+## Contact for Enforcement
+
+If you experience or witness an unacceptable behavior, please report it immediately to the repository maintainer. All complaints will be reviewed and investigated promptly and fairly.

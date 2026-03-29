@@ -25,7 +25,7 @@ The Gmail API requires `token.json` for persistent OAuth access. Generating this
 1. **Generate Token Locally**: Run the application locally on your Windows machine at least once. This will open your web browser. Grant access. This generates the `token.json` on your PC.
 2. **Transfer to Cloud**: Use `scp` to copy the token directly to your VM:
    ```powershell
-   scp -i "D:\FireFox_Downloads\gmail-triage-vm_key.pem" token.json credentials.json azureuser@<your-ip>:~/gmail-triage/
+   scp -i "<path/to/your/key.pem>" token.json credentials.json azureuser@<your-ip>:~/gmail-triage/
    ```
 3. **Persistence**: The `docker-compose.yml` mounts `token.json` as a read-only bind mount, so it survives container restarts.
 

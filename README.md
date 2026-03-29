@@ -98,8 +98,7 @@ Copy-Item .env.example .env
 
 Open `.env` in any text editor and fill in your values:
 - `GEMINI_API_KEY` — your Gemini API key
-- `DAILY_CALL_CAP` — max AI calls per day (default: 100)
-- `MAX_EMAILS_PER_RUN` — emails to process per cycle (default: 20)
+- `LOG_LEVEL` — (optional) set to DEBUG for verbose logs, or INFO for standard
 
 Place your `credentials.json` in the project root folder.
 
@@ -211,7 +210,7 @@ All settings live in `config/agent_config.yaml`:
 | `categories` | The labels the AI can assign to emails |
 | `privacy_rules.exclude_sender_domains` | Domains to skip (e.g., your bank) |
 | `model_settings.daily_call_cap` | Max AI calls per day to control costs |
-| `scheduler.poll_interval_minutes` | How often the bot checks for new mail |
+| `scheduler.poll_interval_minutes` | (Local Setup Only) How often the local Windows Task Scheduler runs the check |
 | `queue_management.max_retries` | How many times to retry a failed email |
 
 ## Operations & Maintenance

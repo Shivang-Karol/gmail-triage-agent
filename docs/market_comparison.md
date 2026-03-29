@@ -24,7 +24,7 @@ Here's why we chose to build our own — and when each approach makes sense.
 > [!IMPORTANT]
 > **Privacy is the hidden cost of most AI platforms.**
 
-- **This Agent**: Your emails are processed on **your own machine** (or your own VM in the cloud). Sensitive information like phone numbers and student IDs is **stripped out** before anything is sent to Google Gemini. Your raw email text never leaves your control.
+- **This Agent**: Your emails are processed on **your own machine** (or your own VM in the cloud). Sensitive information like phone numbers and student IDs is **locally redacted** before the sanitized email text is sent to Google Gemini for classification. Raw, unredacted email data never leaves your environment.
 
 - **Low-Code Platforms**: Your raw email text typically passes through their cloud servers to reach the "AI Node." This means your placement letters, interview invites, and personal information end up in third-party server logs.
 

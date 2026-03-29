@@ -32,7 +32,7 @@ Before touching Azure, make sure you've completed these on your **local PC** fir
 | **VM Name** | `gmail-triage-vm` |
 | **Region** | Pick one where `B2ats_v2` shows as "Free services eligible" (try East US) |
 | **Image** | `Ubuntu Server 24.04 LTS - x64 Gen2` |
-| **Size** | `Standard_B2ats_v2` (2 vCPUs, 1 GB RAM) — look for the **"free services eligible"** tag |
+| **Size** | e.g. `Standard_B2ats_v2` (2 vCPUs, 1 GB RAM) — look for whichever instance currently has the **"free services eligible"** tag |
 | **Authentication** | SSH public key (Azure will generate one for you) |
 | **Username** | `azureuser` |
 | **Inbound Ports** | Allow **SSH (22)** only |
@@ -42,7 +42,7 @@ Before touching Azure, make sure you've completed these on your **local PC** fir
 6. **Download the `.pem` key file** when prompted. Save it somewhere safe — you cannot download it again!
 
 > [!TIP]
-> The `B2ats_v2` size is free for 750 hours/month (that's more than a full month of 24/7 running). It will not touch your Azure credits for the first 12 months.
+> At the time of writing, free-tier eligible SKUs (like `B2ats_v2`) are free for 750 hours/month (that's more than a full month of 24/7 running). Please check current Azure pricing pages to confirm eligibility.
 
 ---
 
@@ -170,13 +170,15 @@ docker compose up -d --build
 
 ## Cost Breakdown
 
-| Resource | Cost |
+*Note: Cloud pricing changes frequently. This is an approximate example based on 2024/2025 Azure pricing.*
+
+| Resource | Estimated Cost |
 | :--- | :--- |
-| VM (B2ats_v2) | **Free** for 12 months (750 hrs/month), then ~$4.49/month |
-| OS Disk (Standard SSD, 30GB) | ~$2/month (may be included in free tier) |
+| VM (Free Tier Eligible) | **Free** for 12 months (750 hrs/month), then ~$5/month |
+| OS Disk (Standard SSD, 30GB) | ~$2/month (often included in free tier) |
 | Public IP | ~$3/month |
 | **Total (Year 1)** | **~$3-5/month** |
-| **Total (After Year 1)** | **~$8-10/month** |
+| **Total (After Year 1)** | **~$10/month** |
 
 > [!TIP]
-> With $100 in annual Azure credits, this setup will last comfortably for **over 2 years** of continuous operation.
+> With $100 in student or startup cloud credits, this setup will last comfortably for **over 2 years** of continuous operation.
