@@ -1,0 +1,37 @@
+[
+  {
+    "sender": "support@codegym.cc",
+    "subject": "Kotlin is live. What's next?",
+    "body": "Promotional material for Kotlin course",
+    "classification": "PROMOTION",
+    "reasoning": "CodeGym is a 3rd-party company, not a major institution. Their marketing is PROMOTION, not NEWSLETTER."
+  },
+  {
+    "sender": "invitations@linkedin.com",
+    "subject": "I want to connect",
+    "body": "Friend request on LinkedIn",
+    "classification": "SOCIAL",
+    "reasoning": "Standard connection request."
+  },
+  {
+    "sender": "no-reply@contact.elevenlabs.io",
+    "subject": "What else can ElevenLabs API do?",
+    "body": "Marketing material",
+    "classification": "PROMOTION",
+    "reasoning": "Marketing email from a third-party brand."
+  },
+  {
+    "sender": "no-reply@classroom.google.com",
+    "subject": "New announcement: 'Updated dataset for Knn'",
+    "body": "Classroom announcement",
+    "classification": "COLLEGE",
+    "reasoning": "All emails originating from Google Classroom or college coursework go to COLLEGE."
+  },
+  {
+    "sender": "support@hackerearth.com",
+    "subject": "Reminder: Mock Assessment 12",
+    "body": "...invited by BMSIT - Placement Account for Mock Assessment 12...",
+    "classification": "EXAMS",
+    "reasoning": "Although sent by a 3rd party platform (HackerEarth), the body indicates an assessment/qualifier mandated by the college."
+  }
+]
