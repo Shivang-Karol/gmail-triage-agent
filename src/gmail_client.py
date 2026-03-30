@@ -59,18 +59,15 @@ def setup_labels(service, required_labels):
     # Gmail API label color options
     # See: https://developers.google.com/gmail/api/reference/rest/v1/users.labels
     LABEL_COLORS = {
-        'CAREER_OPPORTUNITY':    {'textColor': '#ffffff', 'backgroundColor': '#fb4c2f'},  # Red
-        'INTERVIEW_CONFIRMATION': {'textColor': '#ffffff', 'backgroundColor': '#ff7537'},  # Orange
-        'ASSESSMENT_NOTIFICATION': {'textColor': '#ffffff', 'backgroundColor': '#ffad47'},  # Yellow-Orange
-        'OFFER_LETTER':          {'textColor': '#ffffff', 'backgroundColor': '#16a765'},  # Green
-        'REJECTION':             {'textColor': '#ffffff', 'backgroundColor': '#98a0a6'},  # Gray
-        'ACADEMIC_ALERTS':       {'textColor': '#ffffff', 'backgroundColor': '#4285f4'},  # Blue
-        'FINANCIAL_ALERTS':      {'textColor': '#ffffff', 'backgroundColor': '#f4b400'},  # Gold
-        'SOCIAL_NOTIFICATIONS':  {'textColor': '#ffffff', 'backgroundColor': '#b99aff'},  # Purple
+        'EXAMS':                 {'textColor': '#ffffff', 'backgroundColor': '#fb4c2f'},  # Red
+        'NPTEL':                 {'textColor': '#ffffff', 'backgroundColor': '#4a86e8'},  # Blue
+        'PLACEMENT_CELL':        {'textColor': '#ffffff', 'backgroundColor': '#ffad47'},  # Orange
+        'COURSES':               {'textColor': '#ffffff', 'backgroundColor': '#16a766'},  # Green
+        'COLLEGE':               {'textColor': '#ffffff', 'backgroundColor': '#653e9b'},  # Purple/Indigo
         'NEWSLETTER':            {'textColor': '#ffffff', 'backgroundColor': '#4986e7'},  # Light Blue
-        'PROMOTION':             {'textColor': '#ffffff', 'backgroundColor': '#68dfa9'},  # Teal
-        'SPAM':                  {'textColor': '#ffffff', 'backgroundColor': '#999999'},  # Dark Gray
-        'UNCATEGORIZED':         {'textColor': '#ffffff', 'backgroundColor': '#cccccc'},  # Silver
+        'PROMOTION':             {'textColor': '#ffffff', 'backgroundColor': '#149e60'},  # Teal
+        'SOCIAL':                {'textColor': '#ffffff', 'backgroundColor': '#a479e2'},  # Light Purple
+        'UNCATEGORIZED':         {'textColor': '#ffffff', 'backgroundColor': '#999999'},  # Silver
         'REVIEW_NEEDED':         {'textColor': '#ffffff', 'backgroundColor': '#e07798'},  # Pink
     }
     
@@ -102,13 +99,20 @@ def setup_labels(service, required_labels):
             
     return created_map
 
-def fetch_message_body(service, message_id):
+def fetch_message_details(service, message_id):
     """
-    Given an email ID, recursively searches for the plaintext body.
+    Given an email ID, recursively searches for the plaintext body,
+    and also extracts the Sender (From) and Subject.
     """
     try:
         msg = service.users().messages().get(userId='me', id=message_id, format='full').execute()
         
+        payload = msg.get('payload', {})
+        headers = payload.get('headers', [])
+        
+        subject = next((h['value'] for h in headers if h['name'].lower() == 'subject'), "No Subject")
+        sender = next((h['value'] for h in headers if h['name'].lower() == 'from'), "Unknown Sender")
+
         # Traverse payload to find 'text/plain' or 'text/html'
         def extract_parts(parts):
             text = ""
@@ -122,17 +126,24 @@ def fetch_message_body(service, message_id):
                     text += extract_parts(part['parts'])
             return text
 
-        payload = msg.get('payload', {})
         if payload.get('mimeType') == 'text/plain' and 'data' in payload.get('body', {}):
             import base64
             body_text = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8')
         else:
             body_text = extract_parts(payload.get('parts', []))
             
-        return body_text.strip()
+        return {
+            "subject": subject,
+            "sender": sender,
+            "body": body_text.strip()
+        }
     except Exception as e:
-        logger.error(f"Failed to fetch body for {message_id}: {e}")
-        return ""
+        logger.error(f"Failed to fetch details for {message_id}: {e}")
+        return {
+            "subject": "Error",
+            "sender": "Error",
+            "body": ""
+        }
 
 def apply_label(service, message_id, label_id):
     """Applies a label idempotently to a specific email."""

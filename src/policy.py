@@ -53,72 +53,45 @@ class PrivacyPolicy:
 class FallbackClassifier:
     """
     Deterministic keyword-based classifier.
-    Used when Gemini API is unavailable (outage, rate limit exhaustion, quota exceeded).
-    Results are marked with low confidence so they can be re-evaluated later.
-
-    IMPORTANT: Category names MUST match the official 12-category taxonomy
-    defined in config/agent_config.yaml. Do NOT invent new names here.
+    Matches the new 6-category taxonomy.
     """
-
-    # Ordered by the same precedence as the Gemini prompt (high → low priority)
     RULES = [
         {
-            "category": "OFFER_LETTER",
-            "keywords": ["offer letter", "we are pleased to offer", "compensation package",
-                         "onboarding", "joining date", "welcome aboard"],
+            "category": "EXAMS",
+            "keywords": ["qualifier", "exam date", "assessment", "test link", "coding round", 
+                         "technical round", "hall ticket", "admit card", "registration closes"],
         },
         {
-            "category": "INTERVIEW_CONFIRMATION",
-            "keywords": ["interview scheduled", "interview invitation", "zoom meeting",
-                         "google meet", "appear for interview", "interview link",
-                         "calendar invite"],
+            "category": "NPTEL",
+            "keywords": ["nptel", "swayam", "iitm", "assignment unit", "course update"],
         },
         {
-            "category": "ASSESSMENT_NOTIFICATION",
-            "keywords": ["coding assessment", "online test", "hackerrank", "leetcode",
-                         "aptitude test", "test link", "coding round", "technical round"],
+            "category": "PLACEMENT_CELL",
+            "keywords": ["placement", "tpo", "hiring", "recruitment", "campus drive", 
+                         "shortlisted", "offer letter", "interview invitation"],
         },
         {
-            "category": "CAREER_OPPORTUNITY",
-            "keywords": ["job opening", "hiring", "recruitment", "we are looking for",
-                         "internship", "intern", "placement", "campus drive",
-                         "shortlisted", "referral", "stipend", "apply now"],
+            "category": "COLLEGE",
+            "keywords": ["circular", "university", "hostel", "library", "research project", 
+                         "admin", "college notice"],
         },
         {
-            "category": "REJECTION",
-            "keywords": ["regret to inform", "not selected", "unable to proceed",
-                         "not shortlisted", "unfortunately", "we will not be moving forward"],
-        },
-        {
-            "category": "ACADEMIC_ALERTS",
-            "keywords": ["nptel", "exam date", "college circular", "deadline",
-                         "last date", "registration closes", "submit by",
-                         "classroom", "assignment due"],
-        },
-        {
-            "category": "FINANCIAL_ALERTS",
-            "keywords": ["transaction", "payment", "bank alert", "credited",
-                         "debited", "upi", "account statement"],
-        },
-        {
-            "category": "SOCIAL_NOTIFICATIONS",
-            "keywords": ["linkedin", "github", "skool", "someone viewed your profile",
-                         "new follower", "mentioned you", "pull request"],
+            "category": "COURSES",
+            "keywords": ["certification", "workshop", "learn", "enroll", "masterclass", 
+                         "training program"],
         },
         {
             "category": "NEWSLETTER",
-            "keywords": ["newsletter", "weekly digest", "roundup", "substack",
-                         "unsubscribe", "blog post"],
+            "keywords": ["institute update", "weekly digest", "roundup", "newsletter"],
         },
         {
             "category": "PROMOTION",
-            "keywords": ["% off", "limited time", "discount", "sale", "shop now",
-                         "exclusive offer", "coupon", "promo code"],
+            "keywords": ["% off", "discount", "sale", "limited time", "exclusive offer", 
+                         "coupon", "shop now"],
         },
         {
-            "category": "SPAM",
-            "keywords": ["win a prize", "click here to claim", "nigerian prince",
-                         "act now", "you have been selected to receive"],
+            "category": "SOCIAL",
+            "keywords": ["linkedin", "github", "skool", "connection request", "follower"],
         },
     ]
 
@@ -132,12 +105,11 @@ class FallbackClassifier:
                 if keyword in text_lower:
                     return {
                         "category": rule["category"],
-                        "confidence": 0.55,  # Low confidence — flags for REVIEW_NEEDED
+                        "confidence": 0.55,  # Flags for REVIEW_NEEDED
                         "reasoning": f"Fallback: matched keyword '{keyword}' (Gemini unavailable)",
                         "summary": f"Keyword-matched as {rule['category']} during model outage"
                     }
 
-        # No keywords matched — use official fallback label
         return {
             "category": "UNCATEGORIZED",
             "confidence": 0.30,
