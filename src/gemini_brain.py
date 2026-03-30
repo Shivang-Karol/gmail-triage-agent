@@ -1,7 +1,7 @@
 """
 Gemini Brain — Migrated to google.genai SDK (replaces deprecated google.generativeai)
 Uses Pydantic models for type-safe structured output.
-Classifies emails into a strict 12-category closed taxonomy.
+Classifies emails into a strict 8-category closed taxonomy.
 """
 import os
 import logging
@@ -24,7 +24,7 @@ from src.config_loader import get_config
 load_dotenv(BASE_DIR / ".env")
 
 # =============================================
-# Pydantic Schema (replaces the old dict schema)
+# Pydantic Schema (Corrected for Chain-of-Thought)
 # =============================================
 
 class EmailClassification(BaseModel):
@@ -51,24 +51,18 @@ def get_client():
     return _client
 
 def initialize_model():
-    """
-    Returns a tuple of (client, model_name) for compatibility with the worker.
-    The new SDK is stateless — the client handles everything.
-    """
+    """Returns a tuple of (client, model_name)."""
     config = get_config()
-    categories = config.get("categories", ["UNCATEGORIZED"])
-    model_name = config.get("model_settings", {}).get("name", "gemini-2.5-flash")
+    model_name = config.get("model_settings", {}).get("name", "gemini-2.0-flash")
     client = get_client()
     return client, model_name
 
 def classify_email_text(client, sender, subject, body_text):
-    """
-    Sends the email metadata and text to Gemini using the new google.genai SDK.
-    Enabled with Google Search tool to research unknown senders.
-    """
+    """Sends email metadata to Gemini using the new google.genai SDK with Search Tool."""
     config = get_config()
-    model_name = config.get("model_settings", {}).get("name", "gemini-2.0-flash") # Use 1.5 or 2.0 for tool support
-    # Dynamically load examples so the user can update them without editing code
+    model_name = config.get("model_settings", {}).get("name", "gemini-2.0-flash")
+    
+    # Dynamically load examples
     examples_path = BASE_DIR / "config" / "few_shot_examples.json"
     few_shot_text = "No examples loaded."
     if examples_path.exists():
@@ -84,45 +78,42 @@ def classify_email_text(client, sender, subject, body_text):
         "Your goal is to triage incoming emails with 100% precision.\n\n"
         
         "### YOUR TOOLS:\n"
-        "- GOOGLE SEARCH: If the sender's domain or the organization mentioned is unknown to you, "
-        "you MUST use Google Search to verify their identity and purpose (e.g., 'What is [sender domain]?'). "
-        "This is critical for distinguishing between a valid COURSE opportunity and a generic PROMOTION.\n\n"
+        "- GOOGLE SEARCH: If the sender's domain or the organization mentioned is unknown, "
+        "you MUST use Google Search to verify their identity and purpose. "
+        "This is critical for distinguishing between a valid COURSE and a generic PROMOTION.\n\n"
         
         "### CATEGORIES & CONFLICT RESOLUTION (Strict Rules):\n"
         "1. EXAMS: Qualifier tests, technical assessments, or college circulars that specifically state you are *registered* for an exam or *must take* an exam. High priority.\n"
         "2. NPTEL: Assignments, hall tickets, call letters, and core communications from IITM or NPTEL. (Exception: NPTEL Newsletters go to NEWSLETTER. Coursera courses go to COURSES).\n"
         "3. PLACEMENT_CELL: Official communications from the university Placement Office or campus recruitment drives.\n"
-        "4. COURSES: Genuine learning opportunities from major, multi-million user platforms like Udemy, Coursera, or edX. These are valid opportunities, not promotions.\n"
-        "5. COLLEGE: General college brochures, timetables, study materials from teachers, research projects. (Exception: Casual, non-productive messages do not belong here).\n"
+        "4. COURSES: Genuine learning opportunities from major, multi-million user platforms like Udemy, Coursera, or edX.\n"
+        "5. COLLEGE: General college brochures, timetables, study materials from teachers, research projects.\n"
         "6. NEWSLETTER: Informative/promotional updates specifically from major institutes (IITs, NITs, NPTEL).\n"
         "7. PROMOTION: Marketing brochures, generic discounts from unknown/small ed-tech companies.\n"
-        "8. SOCIAL: Casual connections, non-productive networking, LinkedIn requests. Note: If a message has study material from a teacher, it is COLLEGE, not SOCIAL.\n"
+        "8. SOCIAL: Casual connections, non-productive networking, LinkedIn requests.\n"
         "9. UNCATEGORIZED: The fallback if absolutely no other category fits.\n\n"
         
         "### CONFIDENCE SCORING GUIDE:\n"
-        "You must calibrate your confidence float strictly according to this guide so the backend can automate correctly:\n"
-        "- 0.95 to 0.99: Perfect match with the Few-Shot Examples or explicitly defined pre-approved sources (NPTEL, Classroom, Udemy).\n"
-        "- 0.85 to 0.94: High certainty based on strong keywords and clear intent without needing a search.\n"
-        "- 0.60 to 0.75: You relied heavily on the Google Search Tool to determine the company's legitimacy and made an educated deduction.\n"
-        "- Below 0.50: Pure guess. Highly ambiguous.\n\n"
+        "You must calibrate your confidence float strictly according to this guide:\n"
+        "- 0.95 to 0.99: Perfect match with the Few-Shot Examples or pre-approved sources.\n"
+        "- 0.85 to 0.94: High certainty based on strong keywords without needing search.\n"
+        "- 0.60 to 0.75: Relied on Google Search Tool to determine legitimacy.\n"
+        "- Below 0.50: Pure guess.\n\n"
         
         "### FEW-SHOT EXAMPLES (For Calibration):\n"
         f"{few_shot_text}\n\n"
         
         "### INPUT FORMAT:\n"
-        "You will receive:\n"
         "- SENDER: The 'From' field.\n"
         "- SUBJECT: The email title.\n"
-        "- BODY: The redacted content of the email.\n\n"
+        "- BODY: The redacted content.\n\n"
         
         "### RULES:\n"
-        "- Be skeptical of PROMOTIONS disguised as COURSES. Use search to verify the platform's reputation.\n"
+        "- Be skeptical of PROMOTIONS disguised as COURSES. Use search to verify reputation.\n"
         "- If an email is from LinkedIn but is about an INTERVIEW, it is PLACEMENT_CELL or EXAMS depending on context.\n"
     )
     
     prompt = f"SENDER: {sender}\nSUBJECT: {subject}\nBODY: {body_text}"
-    
-    logger.debug("Prompting Gemini API with Search Tool...")
     
     try:
         response = client.models.generate_content(
@@ -138,18 +129,12 @@ def classify_email_text(client, sender, subject, body_text):
             )
         )
         
-        # Log token usage
         if hasattr(response, 'usage_metadata') and response.usage_metadata:
             um = response.usage_metadata
-            logger.info(f"Token usage — prompt: {um.prompt_token_count}, "
-                        f"output: {um.candidates_token_count}, "
-                        f"total: {um.total_token_count}")
+            logger.info(f"Token usage — prompt: {um.prompt_token_count}, total: {um.total_token_count}")
         
         return json.loads(response.text)
         
-    except json.JSONDecodeError as e:
-        logger.error(f"Gemini returned invalid JSON: {e}")
-        raise ValueError("Model failed to adhere to JSON Schema.")
     except Exception as e:
         logger.error(f"API Error during Gemini classification: {e}")
         raise
