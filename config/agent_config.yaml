@@ -1,43 +1,51 @@
 # Gmail Triage Agent Configuration
 # Defines how the local agent interacts with Gmail and Gemini
 
-# --- Category Definitions (Strict Schema) ---
-# Gemini will only be allowed to pick from these categories.
+# --- Category Definitions (Strict 8-Category Taxonomy) ---
+# Gemini will only be allowed to pick from these specific categories.
 categories:
-  - CAREER_OPPORTUNITY
-  - INTERVIEW_CONFIRMATION
-  - ASSESSMENT_NOTIFICATION
-  - OFFER_LETTER
-  - REJECTION
-  - ACADEMIC_ALERTS
-  - SOCIAL_NOTIFICATIONS
-  - FINANCIAL_ALERTS
-  - NEWSLETTER
-  - PROMOTION
-  - SPAM
-  - UNCATEGORIZED
+  - EXAMS              # Qualifiers, internal company tests sent via college, etc.
+  - NPTEL              # Mails from IITM or NPTEL (assignments, newsletters, etc.)
+  - PLACEMENT_CELL     # Anything where the sender or body matches "placement cell"
+  - COURSES            # Valid educational courses (verified vs promotions)
+  - COLLEGE            # Official circulars, research projects, and university news.
+  - NEWSLETTER         # Educational promos/updates from major institutes (IIT/NIT/NPTEL).
+  - PROMOTION          # Generic brand marketing, discounts, non-educational ads.
+  - SOCIAL             # LinkedIn requests, community notifications, etc.
+  - UNCATEGORIZED      # The mandatory fallback label
+
+# --- Dynamic Trust & Thresholds ---
+# Addressing the "0.80 threshold is too rigid" problem.
+threshold_settings:
+  standard_threshold: 0.80
+  high_trust_threshold: 0.60
+  
+  # Domains that can bypass the high 0.80 bar.
+  high_trust_domains:
+    - "nptel.ac.in"
+    - "iitm.ac.in"
+    - "swayam.gov.in"
+    - "classroom.google.com"
+    - "placement" 
 
 # --- Privacy & Data Governance ---
 privacy_rules:
-  # Do not ingest or send these to AI under any circumstances
-  exclude_sender_domains:
-    - "chase.com"
-    - "bankofamerica.com"
-    - "paypal.com"
-    # Add your family domains or personal banking here
-  
   # Regex patterns to redact from email bodies before API calls
   redact_patterns:
     phone_numbers: true
     student_ids: true
     ssn: true
+  
+  # Excluded domains (emails we completely ignore)
+  exclude_sender_domains:
+    - "bankofamerica.com"
+    - "paypal.com"
 
 # --- Model & API Guardrails ---
 model_settings:
-  name: "gemini-2.5-flash"  # Fast, cheap, capable of structuring JSON
-  max_tokens_per_email: 1500 # Don't send 50-page PDFs
-  daily_call_cap: 300       # Hard limit to prevent runaway loops
-  confidence_auto_label_threshold: 0.80
+  name: "gemini-2.0-flash"  
+  max_tokens_per_email: 1500 
+  daily_call_cap: 300       
 
 # --- Operational Overrides ---
 scheduler:
