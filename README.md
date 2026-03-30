@@ -10,7 +10,7 @@ Every hour, this bot wakes up and:
 1. **Reads** your new, unread Gmail messages.
 2. **Redacts** sensitive PII (like phone numbers) so they never leave your machine.
 3. **Classifies** each email using Google's Gemini AI (or local keyword fallback rules).
-4. **Labels** them directly in your Gmail (e.g., `Placement`, `Academic`, `Finance`).
+4. **Labels** them directly in your Gmail (e.g., `Exams`, `NPTEL`, `Placement`).
 5. **Logs** everything to a local SQLite database so absolutely nothing is ever lost.
 
 You can run it **locally on your Windows PC** while you study, or deploy it to a **free cloud VM** for 24/7 hands-free magic. Both paths are fully documented below.
@@ -18,7 +18,7 @@ You can run it **locally on your Windows PC** while you study, or deploy it to a
 ## 🛠️ Key Features
 
 - **Resilient Queue** 🧱: Powered by SQLite — if the power goes out, it picks up exactly where it left off.
-- **AI Classification** 🧠: Highly accurate categorization using Gemini 2.5 Flash.
+- **AI Classification** 🧠: Highly accurate categorization using Gemini 2.0 Flash.
 - **Fallback Safe** 🛟: Automatically switches to local keyword rules if your AI quota runs out.
 - **Cost Guardrails** 💸: Strict `daily_call_cap` ensures you never accidentally burn through API credits.
 - **Dead-Letter Recovery** ♻️: Emails that fail processing aren't skipped—they are queued to be replayed.

@@ -114,11 +114,20 @@ def process_queue():
                 notify_if_urgent(ml_result)
                 mark_completed(conn, msg_id, json.dumps(ml_result), used_model, latency)
                 
+                # Pacing: Only sleep if we actually hit the AI model
                 if used_model != "fallback_rules" and used_model != "none":
-                    time.sleep(1) # Reduced sleep since we use flash/2.0
+                    time.sleep(1) # Flash 2.0/1.5 rate limit spacing
 
             except Exception as e:
-                logger.error(f"Failed processing {msg_id}: {e}")
+                import socket
+                is_net_error = isinstance(e, (socket.timeout, socket.gaierror))
+                err_msg = f"Network Error: {e}" if is_net_error else f"Processing Error: {e}"
+                logger.error(f"Failed processing {msg_id}: {err_msg}")
+                
+                # If it's a network error, sleep longer to wait for reconnect
+                if is_net_error:
+                    time.sleep(10)
+                
                 mark_failed(conn, msg_id, str(e), attempt_count)
 
 if __name__ == "__main__":
